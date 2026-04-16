@@ -1,0 +1,17 @@
+data_dir: data/dataset
+output_dir: models
+log_dir: artifacts/logs
+batch_size: 64
+epochs_phase1: 5
+epochs_phase2: 30
+lr_phase1: 0.001
+lr_phase2: 0.0001
+warmup_epochs: 2
+patience: 8
+grad_clip: 1.0
+mixup_alpha: 0.2
+label_smoothing: 0.1
+val_split: 0.15
+num_workers: 4
+seed: 42
+

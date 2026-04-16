@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build / packaging artifacts
+*.egg-info/
+build/
+dist/
+
+# Runtime artifacts
+artifacts/logs/*
+artifacts/temp/*
+!artifacts/logs/.gitkeep
+!artifacts/temp/.gitkeep
+
+# Model checkpoints
+models/*
+!models/.gitkeep
+
