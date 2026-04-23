@@ -358,6 +358,11 @@ def main() -> None:
     parser.add_argument("--class_weighted_loss", action="store_true",
                         help="Scale loss by inverse class frequency "
                              "(stacks with the weighted sampler)")
+    parser.add_argument("--weight_smoothing", choices=["sqrt", "inv", "cbf"],
+                        default="sqrt",
+                        help="How to soften class weights: sqrt (default, ~17x ratio), "
+                             "inv (raw inverse, 276x — may collapse dominant class), "
+                             "cbf (effective number of samples, Cui et al. 2019)")
     parser.add_argument("--compile", action="store_true",
                         help="Apply torch.compile for faster training "
                              "(requires PyTorch 2.0+; MPS support is limited)")
@@ -392,7 +397,10 @@ def main() -> None:
     class_weights = None
     if args.class_weighted_loss:
         class_weights = build_class_weights_for_split(
-            args.data_dir, val_split=args.val_split, seed=args.seed
+            args.data_dir,
+            val_split=args.val_split,
+            seed=args.seed,
+            smoothing=args.weight_smoothing,
         )
         print(
             f"  Class weights: "
@@ -426,6 +434,7 @@ def main() -> None:
         "loss": args.loss,
         "focal_gamma": args.focal_gamma,
         "class_weighted_loss": args.class_weighted_loss,
+        "weight_smoothing": args.weight_smoothing,
         "label_smoothing": args.label_smoothing,
         "lr_phase1": args.lr_phase1,
         "lr_phase2": args.lr_phase2,

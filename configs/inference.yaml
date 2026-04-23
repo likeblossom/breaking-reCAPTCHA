@@ -1,0 +1,20 @@
+# Inference routing configuration
+# --------------------------------
+# checkpoint:  path to the best_model.pt to deploy
+# threshold:   confidence cutoff (0-1)
+#              - predictions >= threshold → accepted (returned to caller)
+#              - predictions <  threshold → uncertain (sent to fallback)
+#
+# Tuning guidance (from threshold sweep on exp_ce_weighted_sqrt):
+#   0.60 → 88% coverage  / 95.5% accepted accuracy
+#   0.65 → 84% coverage  / 96.2% accepted accuracy
+#   0.70 → 80% coverage  / 96.7% accepted accuracy
+#   0.75 → 75% coverage  / 97.1% accepted accuracy  ← recommended default
+#   0.80 → 63% coverage  / 97.6% accepted accuracy
+#   0.85 → 36% coverage  / 96.4% accepted accuracy  (over-rejects)
+#   0.90 → 15% coverage  / 93.6% accepted accuracy  (over-rejects)
+
+checkpoint: models/exp_ce_weighted_sqrt/best_model.pt
+threshold: 0.75
+tta: true
+uncertain_label: uncertain

@@ -121,18 +121,44 @@ def get_transforms(train: bool) -> transforms.Compose:
 def build_class_weights(
     dataset: datasets.ImageFolder,
     indices: list[int],
+    smoothing: str = "sqrt",
 ) -> torch.Tensor:
     """
-    Compute inverse-frequency class weights for CrossEntropyLoss / FocalLoss.
+    Compute class weights for CrossEntropyLoss / FocalLoss.
 
-    Weights are mean-normalised so the average weight is 1.0, keeping the
-    loss magnitude comparable to the unweighted baseline.
+    Raw inverse-frequency produces extreme ratios on highly imbalanced datasets
+    (e.g. 276× for Car vs Mountain here), which causes the model to collapse on
+    the dominant class.  ``smoothing`` controls how aggressively the imbalance
+    is corrected:
+
+    ``"sqrt"``
+        Square-root of inverse frequency.  Reduces a 276× ratio to ~17×.
+        Good default; no new hyperparameters.
+    ``"inv"``
+        Raw inverse frequency.  Maximum correction; use only when classes are
+        mildly imbalanced (<10×).
+    ``"cbf"``
+        Effective-number-of-samples weighting (β=0.9999).  From the
+        Class-Balanced Loss paper (Cui et al., 2019).  Principled smoothing
+        that also works well at extreme ratios.
+
+    In all cases weights are mean-normalised so the loss magnitude stays
+    comparable to the unweighted baseline.
     """
     num_classes = len(dataset.classes)
     counts = torch.zeros(num_classes)
     for idx in indices:
         counts[dataset.samples[idx][1]] += 1
-    weights = 1.0 / counts.clamp(min=1.0)
+    counts = counts.clamp(min=1.0)
+
+    if smoothing == "inv":
+        weights = 1.0 / counts
+    elif smoothing == "cbf":
+        beta = 0.9999
+        weights = (1.0 - beta) / (1.0 - beta ** counts)
+    else:  # "sqrt" — default
+        weights = 1.0 / counts.sqrt()
+
     return weights / weights.mean()
 
 
@@ -140,6 +166,7 @@ def build_class_weights_for_split(
     data_dir: str | Path,
     val_split: float = 0.15,
     seed: int = 42,
+    smoothing: str = "sqrt",
 ) -> torch.Tensor:
     """
     Convenience wrapper: scan ``data_dir/train`` and return class weights
@@ -152,7 +179,7 @@ def build_class_weights_for_split(
     all_labels = [s[1] for s in index_ds.samples]
     sss = StratifiedShuffleSplit(n_splits=1, test_size=val_split, random_state=seed)
     train_idx, _ = next(sss.split(range(n), all_labels))
-    return build_class_weights(index_ds, train_idx.tolist())
+    return build_class_weights(index_ds, train_idx.tolist(), smoothing=smoothing)
 
 
 # ---------------------------------------------------------------------------
