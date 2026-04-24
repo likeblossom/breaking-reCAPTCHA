@@ -23,14 +23,21 @@ from torchvision.models import EfficientNet_B2_Weights, efficientnet_b2
 class CaptchaClassifier(nn.Module):
     """EfficientNet-B2 with a replaced classification head."""
 
-    def __init__(self, num_classes: int, pretrained: bool = True) -> None:
+    def __init__(
+        self,
+        num_classes: int,
+        pretrained: bool = True,
+        dropout: float = 0.4,
+    ) -> None:
         super().__init__()
         weights = EfficientNet_B2_Weights.IMAGENET1K_V1 if pretrained else None
         self.backbone = efficientnet_b2(weights=weights)
 
-        # Replace the 1000-class ImageNet head with our num_classes head.
         in_features: int = self.backbone.classifier[1].in_features  # 1408 for B2
-        self.backbone.classifier[1] = nn.Linear(in_features, num_classes)
+        self.backbone.classifier = nn.Sequential(
+            nn.Dropout(p=dropout, inplace=True),
+            nn.Linear(in_features, num_classes),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.backbone(x)
@@ -76,6 +83,7 @@ class CaptchaClassifier(nn.Module):
     def load(cls, path: str | Path, device: torch.device | str = "cpu") -> tuple["CaptchaClassifier", list[str]]:
         checkpoint = torch.load(path, map_location=device, weights_only=False)
         model = cls(num_classes=checkpoint["num_classes"], pretrained=False)
-        model.load_state_dict(checkpoint["model_state_dict"])
+        # strict=False tolerates missing Dropout buffers from older checkpoints
+        model.load_state_dict(checkpoint["model_state_dict"], strict=False)
         model.to(device)
         return model, checkpoint["class_names"]

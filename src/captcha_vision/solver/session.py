@@ -6,8 +6,8 @@ Challenge taxonomy (same three types handled by aplesner/Breaking-reCAPTCHAv2):
   3x3_dynamic  — Select all images matching X; clicked tiles refresh with new
                  images (identified by "none" in the wrapper text).
   4x4          — 4×4 grid of tiles from a single large image ("squares" in
-                 wrapper text).  We classify each tile independently since
-                 we have no segmentation model.
+                 wrapper text).  Multi-scale classification: full composite,
+                 overlapping 2×2 blocks, and individual tiles are combined.
 """
 from __future__ import annotations
 
@@ -15,12 +15,15 @@ import csv
 import logging
 import random
 import time
+from io import BytesIO
 from datetime import datetime
 from pathlib import Path
+from urllib.request import Request, urlopen
 
+from PIL import Image
 from playwright.sync_api import Frame, Page
 
-from captcha_vision.inference.predictor import Decision, Predictor
+from captcha_vision.inference.predictor import Predictor
 
 from .browser import get_challenge_frame, get_checkbox_frame, human_click, human_move
 
@@ -304,44 +307,226 @@ class SolverSession:
         One-shot classification for an NxN grid.
 
         3x3 static: threshold on all_probs[target].
-        4x4:        top-N strategy — classify all tiles first, then click the
-                    N tiles with the highest target-class probability.  This
-                    mirrors what aplesner/Breaking-reCAPTCHAv2 calls
-                    USE_TOP_N_STRATEGY and guarantees we always click something
-                    rather than submitting an empty grid.
+        4x4:        Multi-scale classification — screenshot the full grid,
+                    classify at three scales (full, 2×2 blocks, tile), and
+                    combine scores for robust per-tile decisions.
         """
         tiles = self._get_tiles(frame, grid_size * grid_size)
-        self._mouse_wander_grid(page, tiles)  # simulate studying the images
-
-        label = f"{grid_size}x{grid_size}"
+        self._mouse_wander_grid(page, tiles)
 
         if grid_size == 4:
-            self._solve_topn(page, tiles, target, label)
+            self._solve_4x4_multiscale(page, frame, tiles, target)
         else:
+            label = f"{grid_size}x{grid_size}"
             for i, tile in enumerate(tiles):
                 self._process_tile(page, tile, target, label, i)
                 time.sleep(random.uniform(0.05, 0.15))
 
-    def _solve_topn(
+    # ------------------------------------------------------------------
+    # Internal — 4×4 multi-scale solver
+    # ------------------------------------------------------------------
+
+    _GRID_IMAGE_SELECTORS = [
+        "#rc-imageselect-target img",
+        "table.rc-imageselect-table-44 img",
+        "table.rc-imageselect-table img",
+    ]
+
+    _GRID_TABLE_SELECTORS = [
+        "table.rc-imageselect-table-44",
+        "table.rc-imageselect-table",
+        "#rc-imageselect-target",
+    ]
+
+    def _load_grid_image(self, frame: Frame) -> Image.Image | None:
+        """
+        Load the 4×4 challenge image with the cleanest source available.
+
+        Prefer the original ``img`` URL when present so inference sees the raw
+        challenge image rather than a browser-rendered screenshot with borders
+        and interpolation artefacts. Fall back to screenshots if the source
+        image is not directly retrievable.
+        """
+        for sel in self._GRID_IMAGE_SELECTORS:
+            el = frame.query_selector(sel)
+            if el is None:
+                continue
+            try:
+                src = el.get_attribute("src")
+                if not src:
+                    continue
+                req = Request(
+                    src,
+                    headers={
+                        "User-Agent": (
+                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) "
+                            "Chrome/120.0.0.0 Safari/537.36"
+                        )
+                    },
+                )
+                with urlopen(req, timeout=10) as resp:
+                    return Image.open(BytesIO(resp.read())).convert("RGB")
+            except Exception as exc:
+                log.debug("Grid image URL fetch failed for %s: %s", sel, exc)
+        return self._screenshot_grid(frame)
+
+    def _screenshot_grid(self, frame: Frame) -> Image.Image | None:
+        """Screenshot the 4×4 challenge grid table and return a PIL Image."""
+        for sel in self._GRID_TABLE_SELECTORS:
+            el = frame.query_selector(sel)
+            if el is None:
+                continue
+            try:
+                path = self.save_dir / "_tmp_grid.png"
+                el.screenshot(path=str(path))
+                return Image.open(path).convert("RGB")
+            except Exception as exc:
+                log.debug("Selector %s screenshot failed: %s", sel, exc)
+        return None
+
+    def _solve_4x4_multiscale(
+        self,
+        page: Page,
+        frame: Frame,
+        tiles: list,
+        target: str,
+    ) -> None:
+        """
+        Multi-scale classification for 4×4 grids.
+
+        Individual 4×4 tiles are ~1/16th of a scene — far too small for an
+        image classifier trained on whole tiles.  This method classifies at
+        three scales and combines the signals:
+
+        Scale 1 — Full composite (1 classification)
+            Confirms the target class is present.  Provides a global
+            confidence that adjusts how aggressively tiles are selected.
+
+        Scale 2 — Nine overlapping 2×2 blocks (9 classifications)
+            Each block shows 1/4 of the scene — enough to recognise most
+            objects.  Localises the target to groups of 4 tiles.
+
+        Scale 3 — Individual tiles (16 classifications)
+            Fine-grained tiebreaker.  Within a high-scoring 2×2 block, the
+            tile scores distinguish which tiles actually overlap the object.
+
+        The per-tile score is a weighted combination:
+            0.55 × max(2×2 blocks containing tile)
+          + 0.30 × tile score
+          + 0.15 × global score
+
+        Scores then feed into ``_adaptive_select`` (gap-based cutoff +
+        spatial coherence).  Falls back to tile-only classification if the
+        grid screenshot fails.
+        """
+        composite = self._load_grid_image(frame)
+        if composite is None:
+            log.warning("Grid screenshot failed — falling back to tile-only.")
+            self._solve_4x4_tile_only(page, tiles, target)
+            return
+
+        cw, ch = composite.size
+        tw, th = cw / 4.0, ch / 4.0
+
+        # --- Scale 1: full composite ---
+        full_result = self.predictor.predict_pil(composite, label="composite")
+        global_conf = self.predictor.score_target_pil(composite, target)
+        if self.verbose:
+            print(
+                f"    [composite] p({target})={global_conf:.3f}"
+                f"  top={full_result.label} ({full_result.confidence:.3f})"
+            )
+
+        # --- Scale 2: nine overlapping 2×2 blocks ---
+        block_scores: dict[tuple[int, int], float] = {}
+        for br in range(3):
+            for bc in range(3):
+                crop = composite.crop((
+                    int(bc * tw), int(br * th),
+                    int((bc + 2) * tw), int((br + 2) * th),
+                ))
+                result = self.predictor.predict_pil(crop, label=f"block_{br}_{bc}")
+                block_scores[(br, bc)] = self.predictor.score_target_pil(crop, target)
+                if self.verbose:
+                    print(
+                        f"    [block {br},{bc}] p({target})="
+                        f"{block_scores[(br, bc)]:.3f}"
+                        f"  top={result.label} ({result.confidence:.3f})"
+                    )
+
+        # --- Scale 3: individual tiles from composite ---
+        tile_scores: list[float] = []
+        for i in range(16):
+            r, c = divmod(i, 4)
+            crop = composite.crop((
+                int(c * tw), int(r * th),
+                int((c + 1) * tw), int((r + 1) * th),
+            ))
+            result = self.predictor.predict_pil(crop, label=f"tile_{i}")
+            tp = self.predictor.score_target_pil(crop, target)
+            tile_scores.append(tp)
+            if self.verbose:
+                top_class = self.predictor.class_names[result.class_idx]
+                print(
+                    f"    [  tile ] {i:2d}  {top_class:<14}"
+                    f"  conf={result.confidence:.3f}  p({target})={tp:.3f}"
+                )
+
+        # --- Combine the three scales ---
+        scored: list[tuple[float, int, object]] = []
+        for i in range(min(16, len(tiles))):
+            r, c = divmod(i, 4)
+
+            # Max of all 2×2 blocks that contain this tile.
+            # Tile (r, c) is covered by block (br, bc) when
+            # br <= r <= br+1 and bc <= c <= bc+1.
+            block_max = 0.0
+            for br in range(max(0, r - 1), min(3, r + 1)):
+                for bc in range(max(0, c - 1), min(3, c + 1)):
+                    block_max = max(block_max, block_scores.get((br, bc), 0.0))
+
+            tile_prob = tile_scores[i] if i < len(tile_scores) else 0.0
+            combined = 0.55 * block_max + 0.30 * tile_prob + 0.15 * global_conf
+
+            if self.verbose:
+                print(
+                    f"    [score ] {i:2d}  block_max={block_max:.3f}"
+                    f"  tile={tile_prob:.3f}  global={global_conf:.3f}"
+                    f"  → {combined:.3f}"
+                )
+
+            self._write_log("4x4", target, i, target, combined, False)
+            scored.append((combined, i, tiles[i]))
+
+        # --- Select and click ---
+        to_click = self._adaptive_select(scored, 4, global_conf)
+        to_click.sort(key=lambda x: x[1])
+
+        for prob, idx, tile in to_click:
+            if self.verbose:
+                print(f"    [✓ CLICK] tile {idx:2d}  score={prob:.3f}")
+            self._write_log("4x4", target, idx, target, prob, True)
+            self._click_tile(page, tile)
+            time.sleep(random.uniform(0.08, 0.20))
+
+    def _solve_4x4_tile_only(
         self,
         page: Page,
         tiles: list,
         target: str,
-        label: str,
     ) -> None:
-        """
-        Classify all tiles, rank by all_probs[target], click the top-N.
-
-        Minimum floor of 0.05 prevents clicking tiles where the target class
-        has essentially zero probability.  N is self.top_n (default 3).
-        """
-        ranked: list[tuple[float, int, object]] = []  # (target_prob, idx, tile)
-
+        """Fallback: classify individual tiles when the grid screenshot fails."""
+        scored: list[tuple[float, int, object]] = []
         for i, tile in enumerate(tiles):
-            result = self._classify_tile(tile, i)
+            result, screenshot_path = self._classify_tile(tile, i)
             if result is None:
+                scored.append((0.0, i, tile))
                 continue
-            target_prob = result.all_probs.get(target, 0.0)
+            if screenshot_path is None:
+                target_prob = 0.0
+            else:
+                target_prob = self.predictor.score_target_image(screenshot_path, target)
             top_class = self.predictor.class_names[result.class_idx]
             if self.verbose:
                 print(
@@ -349,23 +534,121 @@ class SolverSession:
                     f"{top_class:<14} conf={result.confidence:.3f}"
                     f"  p({target})={target_prob:.3f}"
                 )
-            self._write_log(label, target, i, top_class, target_prob, False)
-            ranked.append((target_prob, i, tile))
+            self._write_log("4x4", target, i, top_class, target_prob, False)
+            scored.append((target_prob, i, tile))
             time.sleep(random.uniform(0.03, 0.08))
 
-        # Sort by target probability descending, take top-N above floor
-        ranked.sort(key=lambda x: x[0], reverse=True)
-        to_click = [(prob, idx, tile) for prob, idx, tile in ranked
-                    if prob >= 0.05][:self.top_n]
-        # Click in index order (looks natural — left-to-right, top-to-bottom)
+        to_click = self._adaptive_select(scored, 4, 0.5)
         to_click.sort(key=lambda x: x[1])
 
         for prob, idx, tile in to_click:
             if self.verbose:
                 print(f"    [✓ CLICK] tile {idx:2d}  p({target})={prob:.3f}")
-            self._write_log(label, target, idx, target, prob, True)
+            self._write_log("4x4", target, idx, target, prob, True)
             self._click_tile(page, tile)
             time.sleep(random.uniform(0.08, 0.20))
+
+    # ------------------------------------------------------------------
+    # Internal — adaptive 4x4 tile selection
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _neighbours_4x4(idx: int, grid: int = 4) -> list[int]:
+        """Return indices of 4-connected neighbours in a grid×grid layout."""
+        r, c = divmod(idx, grid)
+        nbrs = []
+        if r > 0:
+            nbrs.append((r - 1) * grid + c)
+        if r < grid - 1:
+            nbrs.append((r + 1) * grid + c)
+        if c > 0:
+            nbrs.append(r * grid + c - 1)
+        if c < grid - 1:
+            nbrs.append(r * grid + c + 1)
+        return nbrs
+
+    def _adaptive_select(
+        self,
+        scored: list[tuple[float, int, object]],
+        grid_size: int,
+        global_conf: float = 0.5,
+    ) -> list[tuple[float, int, object]]:
+        """
+        Pick which 4x4 tiles to click using score ranking + spatial coherence.
+
+        Works with both raw probabilities (tile-only fallback) and the
+        weighted combined scores from multi-scale classification.
+
+        1. Sort by descending score.
+        2. Find the largest gap — the natural boundary between target and
+           background tiles.  Multi-scale scores produce much cleaner gaps
+           than raw per-tile probabilities.
+        3. Boost tiles that have high-scoring neighbours (spatial coherence).
+        4. Clamp the final count to [2, 8].
+        """
+        if not scored:
+            return []
+
+        by_score = sorted(scored, key=lambda x: x[0], reverse=True)
+        scores = [s for s, _, _ in by_score]
+        score_map = {idx: s for s, idx, _ in scored}
+
+        # --- Gap-based adaptive cutoff ---
+        best_gap = 0.0
+        cut_pos = self.top_n
+        limit = min(len(scores) - 1, 10)
+        for i in range(1, limit):
+            gap = scores[i - 1] - scores[i]
+            if gap > best_gap and scores[i - 1] >= 0.08:
+                best_gap = gap
+                cut_pos = i
+
+        # Require a meaningful gap — if the distribution is flat (no clear
+        # separation), fall back to top_n.
+        if best_gap < 0.04:
+            cut_pos = self.top_n
+
+        candidates = set(by_score[i][1] for i in range(cut_pos))
+
+        # --- Spatial coherence boost ---
+        for score, idx, tile in by_score[cut_pos:]:
+            if score < 0.06:
+                break
+            nbrs_in = sum(
+                1 for n in self._neighbours_4x4(idx, grid_size)
+                if n in candidates
+            )
+            if nbrs_in >= 2:
+                candidates.add(idx)
+
+        # --- Remove isolated tiles ---
+        # Adaptive threshold: when global confidence is high the target is
+        # prominent, so isolated tiles are more plausible.
+        if global_conf >= 0.6:
+            isolated_thr = 0.30
+        elif global_conf <= 0.2:
+            isolated_thr = 0.55
+        else:
+            isolated_thr = 0.40
+
+        final = set()
+        for idx in candidates:
+            nbrs_in = sum(
+                1 for n in self._neighbours_4x4(idx, grid_size)
+                if n in candidates
+            )
+            if nbrs_in > 0 or score_map[idx] >= isolated_thr:
+                final.add(idx)
+
+        if len(final) < 2:
+            final = set(by_score[i][1] for i in range(min(self.top_n, len(by_score))))
+
+        max_clicks = min(self.top_n + 5, 8)
+        if len(final) > max_clicks:
+            ranked = sorted(final, key=lambda i: score_map[i], reverse=True)
+            final = set(ranked[:max_clicks])
+
+        return [(s, idx, tile) for s, idx, tile in scored if idx in final]
 
     def _solve_3x3_dynamic(
         self,
@@ -448,10 +731,13 @@ class SolverSession:
             print(f"    [tiles] found {len(tiles)} via broad td[tabindex] fallback")
         return tiles[:n]
 
-    def _classify_tile(self, tile, tile_idx: int):
+    def _classify_tile(self, tile, tile_idx: int, *, use_tta: bool = False):
         """
         Screenshot a tile and run the classifier.  Returns a PredictionResult
-        or None on failure.  Does NOT click.
+        plus the screenshot path, or ``(None, None)`` on failure.  Does NOT click.
+
+        When ``use_tta`` is True (recommended for 4x4 tiles), five-crop +
+        flip TTA is applied for more robust partial-object classification.
         """
         self._tile_count += 1
 
@@ -465,13 +751,15 @@ class SolverSession:
             tile.screenshot(path=str(save_path))
         except Exception as exc:
             log.warning("Screenshot failed for tile %d: %s", tile_idx, exc)
-            return None
+            return None, None
 
         try:
-            return self.predictor.predict_image(save_path)
+            if use_tta:
+                return self.predictor.predict_image_with_tta(save_path), save_path
+            return self.predictor.predict_image(save_path), save_path
         except Exception as exc:
             log.warning("Prediction failed for tile %d: %s", tile_idx, exc)
-            return None
+            return None, None
 
     def _process_tile(
         self,
@@ -482,21 +770,23 @@ class SolverSession:
         tile_idx: int,
     ) -> bool:
         """
-        Screenshot → classify → click if all_probs[target] >= threshold.
+        Screenshot → classify → click if the target-presence score clears the
+        threshold.
 
-        Uses the probability the model assigns to the TARGET class directly
-        (same as the reference project) rather than checking whether the
-        argmax class equals target.  This catches tiles like:
-            top: Car (0.55) | Motorcycle: 0.45  → matched at thr=0.35
-        which the old argmax check would incorrectly skip.
+        The top-class prediction is still useful for logging, but mixed tiles
+        are scored with a target-aware max-over-crops pass so the presence of a
+        distractor object does not suppress the target as aggressively.
 
         Returns True when the tile was clicked.
         """
-        result = self._classify_tile(tile, tile_idx)
+        result, screenshot_path = self._classify_tile(tile, tile_idx)
         if result is None:
             return False
 
-        target_prob = result.all_probs.get(target, 0.0)
+        if screenshot_path is None:
+            target_prob = 0.0
+        else:
+            target_prob = self.predictor.score_target_image(screenshot_path, target)
         top_class = self.predictor.class_names[result.class_idx]
         matched = target_prob >= self.predictor.threshold
 

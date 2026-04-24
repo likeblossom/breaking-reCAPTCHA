@@ -1,0 +1,29 @@
+timestamp,challenge_type,target,tile_idx,label,confidence,clicked
+2026-04-24 12:42:36,3x3_dynamic,Bicycle,0,Car,0.0334,False
+2026-04-24 12:42:36,3x3_dynamic,Bicycle,1,Bicycle,0.8452,True
+2026-04-24 12:42:37,3x3_dynamic,Bicycle,2,Bridge,0.0025,False
+2026-04-24 12:42:37,3x3_dynamic,Bicycle,3,Traffic Light,0.0085,False
+2026-04-24 12:42:37,3x3_dynamic,Bicycle,4,Crosswalk,0.0077,False
+2026-04-24 12:42:37,3x3_dynamic,Bicycle,5,Bicycle,0.4878,False
+2026-04-24 12:42:38,3x3_dynamic,Bicycle,6,Bicycle,0.9317,True
+2026-04-24 12:42:39,3x3_dynamic,Bicycle,7,Other,0.0321,False
+2026-04-24 12:42:39,3x3_dynamic,Bicycle,8,Bus,0.0278,False
+2026-04-24 12:42:41,3x3_dynamic,Bicycle,1,Palm,0.0176,False
+2026-04-24 12:42:41,3x3_dynamic,Bicycle,6,Traffic Light,0.0774,False
+2026-04-24 12:42:47,4x4,Motorcycle,0,Motorcycle,0.1420,False
+2026-04-24 12:42:47,4x4,Motorcycle,1,Motorcycle,0.1424,False
+2026-04-24 12:42:47,4x4,Motorcycle,2,Motorcycle,0.1323,False
+2026-04-24 12:42:47,4x4,Motorcycle,3,Motorcycle,0.1266,False
+2026-04-24 12:42:47,4x4,Motorcycle,4,Motorcycle,0.6317,False
+2026-04-24 12:42:47,4x4,Motorcycle,5,Motorcycle,0.6452,False
+2026-04-24 12:42:47,4x4,Motorcycle,6,Motorcycle,0.5630,False
+2026-04-24 12:42:47,4x4,Motorcycle,7,Motorcycle,0.5614,False
+2026-04-24 12:42:47,4x4,Motorcycle,8,Motorcycle,0.9175,False
+2026-04-24 12:42:47,4x4,Motorcycle,9,Motorcycle,0.9175,False
+2026-04-24 12:42:47,4x4,Motorcycle,10,Motorcycle,0.8468,False
+2026-04-24 12:42:47,4x4,Motorcycle,11,Motorcycle,0.7142,False
+2026-04-24 12:42:47,4x4,Motorcycle,12,Motorcycle,0.7911,False
+2026-04-24 12:42:47,4x4,Motorcycle,13,Motorcycle,0.6469,False
+2026-04-24 12:42:47,4x4,Motorcycle,14,Motorcycle,0.8765,False
+2026-04-24 12:42:47,4x4,Motorcycle,15,Motorcycle,0.6547,False
+2026-04-24 12:42:47,4x4,Motorcycle,8,Motorcycle,0.9175,True

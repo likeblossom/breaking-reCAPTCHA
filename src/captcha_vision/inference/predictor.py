@@ -37,7 +37,7 @@ import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 
 from captcha_vision.common.device import get_device
-from captcha_vision.data.dataset import IMAGE_SIZE, _rgba_to_rgb, get_transforms
+from captcha_vision.data.dataset import _rgba_to_rgb, get_transforms
 from captcha_vision.models.classifier import CaptchaClassifier
 
 
@@ -151,20 +151,102 @@ class Predictor:
             tensor = tensor.unsqueeze(0)
         return self._predict_tensor(tensor.to(self.device), path=path)
 
+    def predict_image_with_tta(self, image_path: str | Path) -> PredictionResult:
+        """Like ``predict_image`` but forces TTA on regardless of instance setting."""
+        img = _rgba_to_rgb(str(image_path))
+        tensor = self._transform(img).unsqueeze(0).to(self.device)
+        return self._predict_tensor(tensor, path=str(image_path), tta_override=True)
+
+    def predict_pil(self, img: "Image.Image", *, label: str = "<pil>") -> PredictionResult:
+        """Predict from an in-memory PIL Image (avoids disk round-trip)."""
+        from PIL import Image as _PILImage  # noqa: F811 – lazy to avoid top-level dep
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        tensor = self._transform(img).unsqueeze(0).to(self.device)
+        return self._predict_tensor(tensor, path=label)
+
+    def score_target_image(
+        self,
+        image_path: str | Path,
+        target: str,
+        *,
+        tta_override: bool | None = None,
+    ) -> float:
+        """
+        Estimate whether ``target`` is present anywhere in an image.
+
+        Unlike the standard classifier output, this score is target-aware:
+        it keeps the maximum target probability across multiple spatial views
+        instead of averaging them. That makes it more robust when a tile
+        contains the target plus a distractor object.
+        """
+        img = _rgba_to_rgb(str(image_path))
+        tensor = self._transform(img).unsqueeze(0).to(self.device)
+        return self.score_target_tensor(tensor, target, tta_override=tta_override)
+
+    def score_target_pil(
+        self,
+        img: "Image.Image",
+        target: str,
+        *,
+        tta_override: bool | None = None,
+    ) -> float:
+        """Like ``score_target_image`` but works on an in-memory PIL image."""
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        tensor = self._transform(img).unsqueeze(0).to(self.device)
+        return self.score_target_tensor(tensor, target, tta_override=tta_override)
+
+    def score_target_tensor(
+        self,
+        tensor: torch.Tensor,
+        target: str,
+        *,
+        tta_override: bool | None = None,
+    ) -> float:
+        """
+        Return a target-presence score in [0, 1].
+
+        Standard softmax classification is forced to choose one class for the
+        whole tile. For mixed tiles, averaging crops can dilute a true target.
+        Here we treat each augmented/cropped view as an opportunity to spot the
+        target and keep the maximum target probability across views.
+        """
+        if target not in self.class_names:
+            return 0.0
+        if tensor.dim() == 3:
+            tensor = tensor.unsqueeze(0)
+        return self._score_target_tensor(
+            tensor.to(self.device), target, tta_override=tta_override
+        )
+
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
 
     @torch.no_grad()
     def _predict_tensor(
-        self, tensor: torch.Tensor, path: str
+        self, tensor: torch.Tensor, path: str, *, tta_override: bool | None = None,
     ) -> PredictionResult:
+        use_tta = self.tta if tta_override is None else tta_override
+
         logits = self.model(tensor)
         probs = F.softmax(logits, dim=1)
 
-        if self.tta:
+        if use_tta:
             logits_flip = self.model(TF.hflip(tensor))
             probs = (probs + F.softmax(logits_flip, dim=1)) / 2
+
+            _, _, h, w = tensor.shape
+            crop_h, crop_w = int(h * 0.85), int(w * 0.85)
+            if crop_h >= 32 and crop_w >= 32:
+                crops = TF.five_crop(tensor, (crop_h, crop_w))
+                crop_probs = []
+                for crop in crops:
+                    resized = TF.resize(crop, [h, w], antialias=True)
+                    crop_probs.append(F.softmax(self.model(resized), dim=1))
+                avg_crop = torch.stack(crop_probs).mean(dim=0)
+                probs = 0.6 * probs + 0.4 * avg_crop
 
         probs_vec = probs[0]
         confidence = float(probs_vec.max())
@@ -190,3 +272,30 @@ class Predictor:
             threshold=self.threshold,
             all_probs=all_probs,
         )
+
+    @torch.no_grad()
+    def _score_target_tensor(
+        self,
+        tensor: torch.Tensor,
+        target: str,
+        *,
+        tta_override: bool | None = None,
+    ) -> float:
+        use_tta = self.tta if tta_override is None else tta_override
+        target_idx = self.class_names.index(target)
+
+        views = [tensor]
+        if use_tta:
+            views.append(TF.hflip(tensor))
+
+            _, _, h, w = tensor.shape
+            crop_h, crop_w = int(h * 0.85), int(w * 0.85)
+            if crop_h >= 32 and crop_w >= 32:
+                for crop in TF.five_crop(tensor, (crop_h, crop_w)):
+                    views.append(TF.resize(crop, [h, w], antialias=True))
+
+        best = 0.0
+        for view in views:
+            probs = F.softmax(self.model(view), dim=1)
+            best = max(best, float(probs[0, target_idx]))
+        return best

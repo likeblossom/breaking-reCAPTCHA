@@ -1,0 +1,91 @@
+timestamp,challenge_type,target,tile_idx,label,confidence,clicked
+2026-04-24 13:18:07,4x4,Motorcycle,0,Motorcycle,0.0948,False
+2026-04-24 13:18:07,4x4,Motorcycle,1,Motorcycle,0.1967,False
+2026-04-24 13:18:07,4x4,Motorcycle,2,Motorcycle,0.6145,False
+2026-04-24 13:18:07,4x4,Motorcycle,3,Motorcycle,0.6090,False
+2026-04-24 13:18:07,4x4,Motorcycle,4,Motorcycle,0.1037,False
+2026-04-24 13:18:07,4x4,Motorcycle,5,Motorcycle,0.4147,False
+2026-04-24 13:18:07,4x4,Motorcycle,6,Motorcycle,0.8757,False
+2026-04-24 13:18:07,4x4,Motorcycle,7,Motorcycle,0.8759,False
+2026-04-24 13:18:07,4x4,Motorcycle,8,Motorcycle,0.1043,False
+2026-04-24 13:18:07,4x4,Motorcycle,9,Motorcycle,0.4113,False
+2026-04-24 13:18:07,4x4,Motorcycle,10,Motorcycle,0.7793,False
+2026-04-24 13:18:07,4x4,Motorcycle,11,Motorcycle,0.8247,False
+2026-04-24 13:18:07,4x4,Motorcycle,12,Motorcycle,0.1003,False
+2026-04-24 13:18:07,4x4,Motorcycle,13,Motorcycle,0.1729,False
+2026-04-24 13:18:07,4x4,Motorcycle,14,Motorcycle,0.6121,False
+2026-04-24 13:18:07,4x4,Motorcycle,15,Motorcycle,0.6131,False
+2026-04-24 13:18:07,4x4,Motorcycle,2,Motorcycle,0.6145,True
+2026-04-24 13:18:07,4x4,Motorcycle,3,Motorcycle,0.6090,True
+2026-04-24 13:18:08,4x4,Motorcycle,6,Motorcycle,0.8757,True
+2026-04-24 13:18:09,4x4,Motorcycle,7,Motorcycle,0.8759,True
+2026-04-24 13:18:10,4x4,Motorcycle,10,Motorcycle,0.7793,True
+2026-04-24 13:18:10,4x4,Motorcycle,11,Motorcycle,0.8247,True
+2026-04-24 13:18:11,4x4,Motorcycle,14,Motorcycle,0.6121,True
+2026-04-24 13:18:12,4x4,Motorcycle,15,Motorcycle,0.6131,True
+2026-04-24 13:18:18,4x4,Traffic Light,0,Traffic Light,0.3435,False
+2026-04-24 13:18:18,4x4,Traffic Light,1,Traffic Light,0.7722,False
+2026-04-24 13:18:18,4x4,Traffic Light,2,Traffic Light,0.9025,False
+2026-04-24 13:18:18,4x4,Traffic Light,3,Traffic Light,0.8745,False
+2026-04-24 13:18:18,4x4,Traffic Light,4,Traffic Light,0.6488,False
+2026-04-24 13:18:18,4x4,Traffic Light,5,Traffic Light,0.8934,False
+2026-04-24 13:18:18,4x4,Traffic Light,6,Traffic Light,0.8738,False
+2026-04-24 13:18:18,4x4,Traffic Light,7,Traffic Light,0.8769,False
+2026-04-24 13:18:18,4x4,Traffic Light,8,Traffic Light,0.6276,False
+2026-04-24 13:18:18,4x4,Traffic Light,9,Traffic Light,0.6667,False
+2026-04-24 13:18:18,4x4,Traffic Light,10,Traffic Light,0.7586,False
+2026-04-24 13:18:18,4x4,Traffic Light,11,Traffic Light,0.7992,False
+2026-04-24 13:18:18,4x4,Traffic Light,12,Traffic Light,0.1745,False
+2026-04-24 13:18:18,4x4,Traffic Light,13,Traffic Light,0.6673,False
+2026-04-24 13:18:18,4x4,Traffic Light,14,Traffic Light,0.9307,False
+2026-04-24 13:18:18,4x4,Traffic Light,15,Traffic Light,0.6436,False
+2026-04-24 13:18:18,4x4,Traffic Light,1,Traffic Light,0.7722,True
+2026-04-24 13:18:19,4x4,Traffic Light,2,Traffic Light,0.9025,True
+2026-04-24 13:18:19,4x4,Traffic Light,3,Traffic Light,0.8745,True
+2026-04-24 13:18:20,4x4,Traffic Light,5,Traffic Light,0.8934,True
+2026-04-24 13:18:21,4x4,Traffic Light,6,Traffic Light,0.8738,True
+2026-04-24 13:18:21,4x4,Traffic Light,7,Traffic Light,0.8769,True
+2026-04-24 13:18:22,4x4,Traffic Light,11,Traffic Light,0.7992,True
+2026-04-24 13:18:23,4x4,Traffic Light,14,Traffic Light,0.9307,True
+2026-04-24 13:18:28,4x4,Bus,0,Bus,0.5254,False
+2026-04-24 13:18:28,4x4,Bus,1,Bus,0.3231,False
+2026-04-24 13:18:28,4x4,Bus,2,Bus,0.3004,False
+2026-04-24 13:18:28,4x4,Bus,3,Bus,0.1498,False
+2026-04-24 13:18:28,4x4,Bus,4,Bus,0.6458,False
+2026-04-24 13:18:28,4x4,Bus,5,Bus,0.8260,False
+2026-04-24 13:18:28,4x4,Bus,6,Bus,0.5308,False
+2026-04-24 13:18:28,4x4,Bus,7,Bus,0.1544,False
+2026-04-24 13:18:28,4x4,Bus,8,Bus,0.9087,False
+2026-04-24 13:18:28,4x4,Bus,9,Bus,0.9104,False
+2026-04-24 13:18:28,4x4,Bus,10,Bus,0.7013,False
+2026-04-24 13:18:28,4x4,Bus,11,Bus,0.2600,False
+2026-04-24 13:18:28,4x4,Bus,12,Bus,0.6445,False
+2026-04-24 13:18:28,4x4,Bus,13,Bus,0.6385,False
+2026-04-24 13:18:28,4x4,Bus,14,Bus,0.5914,False
+2026-04-24 13:18:28,4x4,Bus,15,Bus,0.2711,False
+2026-04-24 13:18:28,4x4,Bus,4,Bus,0.6458,True
+2026-04-24 13:18:29,4x4,Bus,5,Bus,0.8260,True
+2026-04-24 13:18:30,4x4,Bus,8,Bus,0.9087,True
+2026-04-24 13:18:31,4x4,Bus,9,Bus,0.9104,True
+2026-04-24 13:18:36,4x4,Bicycle,0,Bicycle,0.1737,False
+2026-04-24 13:18:36,4x4,Bicycle,1,Bicycle,0.6209,False
+2026-04-24 13:18:36,4x4,Bicycle,2,Bicycle,0.6204,False
+2026-04-24 13:18:36,4x4,Bicycle,3,Bicycle,0.6130,False
+2026-04-24 13:18:36,4x4,Bicycle,4,Bicycle,0.2584,False
+2026-04-24 13:18:36,4x4,Bicycle,5,Bicycle,0.6589,False
+2026-04-24 13:18:36,4x4,Bicycle,6,Bicycle,0.7522,False
+2026-04-24 13:18:36,4x4,Bicycle,7,Bicycle,0.6330,False
+2026-04-24 13:18:36,4x4,Bicycle,8,Bicycle,0.1927,False
+2026-04-24 13:18:36,4x4,Bicycle,9,Bicycle,0.6564,False
+2026-04-24 13:18:36,4x4,Bicycle,10,Bicycle,0.9020,False
+2026-04-24 13:18:36,4x4,Bicycle,11,Bicycle,0.6746,False
+2026-04-24 13:18:36,4x4,Bicycle,12,Bicycle,0.1638,False
+2026-04-24 13:18:36,4x4,Bicycle,13,Bicycle,0.6421,False
+2026-04-24 13:18:36,4x4,Bicycle,14,Bicycle,0.8568,False
+2026-04-24 13:18:36,4x4,Bicycle,15,Bicycle,0.7930,False
+2026-04-24 13:18:36,4x4,Bicycle,6,Bicycle,0.7522,True
+2026-04-24 13:18:37,4x4,Bicycle,7,Bicycle,0.6330,True
+2026-04-24 13:18:38,4x4,Bicycle,10,Bicycle,0.9020,True
+2026-04-24 13:18:39,4x4,Bicycle,11,Bicycle,0.6746,True
+2026-04-24 13:18:39,4x4,Bicycle,14,Bicycle,0.8568,True
+2026-04-24 13:18:40,4x4,Bicycle,15,Bicycle,0.7930,True

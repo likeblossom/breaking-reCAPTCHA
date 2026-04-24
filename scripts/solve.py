@@ -58,9 +58,9 @@ def _build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.60,
         help=(
-            "Confidence threshold for 3x3 tile classification (default: 0.60).  "
-            "The reference project uses 0.20; anything above 0.70 will skip "
-            "too many valid tiles for the solver to pass."
+            "Target-class probability threshold (softmax) for 3x3 tiles.  "
+            "Lower values (e.g. 0.45–0.55) are more sensitive; higher values "
+            "reduce false clicks."
         ),
     )
     p.add_argument(
@@ -68,10 +68,9 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=3,
         help=(
-            "For 4x4 grids: always click the N tiles with the highest "
-            "target-class probability (top-N strategy from the reference "
-            "paper).  Guarantees we never submit an empty grid.  "
-            "Default 3 matches aplesner/Breaking-reCAPTCHAv2."
+            "For 4x4 grids: base tile count for the adaptive selector.  "
+            "The actual number clicked varies based on score gaps and "
+            "spatial coherence (range [2, top_n+5] clamped to 8)."
         ),
     )
     p.add_argument(
@@ -80,7 +79,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=0.35,
         help=(
             "Confidence threshold for 4x4 tile classification (default: 0.35).  "
-            "Partial crops of a large image naturally score lower."
+            "Only used in the tile-only fallback path."
         ),
     )
     p.add_argument(

@@ -84,25 +84,38 @@ def get_transforms(train: bool) -> transforms.Compose:
     """
     Return the transform pipeline for train or eval mode.
 
-    Training:  ``RandomResizedCrop`` (varying scale/position) + standard
-               geometric and colour augmentations + ``RandomErasing`` (acts
-               like spatial dropout, applied post-normalisation).
+    Training augmentations are tuned for reCAPTCHA tiles, especially the 4x4
+    variant where each tile is a small crop of a larger scene:
+
+      - ``RandomResizedCrop`` with scale down to 0.4 simulates the partial-
+        object fragments the model sees on 4x4 grids.
+      - ``RandomPerspective`` mimics the slight keystone distortion in browser-
+        rendered grid cells.
+      - ``GaussianBlur`` approximates JPEG compression artefacts common in
+        reCAPTCHA images.
+      - ``RandomErasing`` acts as spatial dropout, forcing the model to use
+        distributed features rather than relying on one salient patch.
+
     Eval/test: Deterministic resize + normalise only.
     """
     if train:
         return transforms.Compose(
             [
-                transforms.RandomResizedCrop(IMAGE_SIZE, scale=(0.7, 1.0)),
+                transforms.RandomResizedCrop(
+                    IMAGE_SIZE, scale=(0.4, 1.0), ratio=(0.75, 1.33),
+                ),
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(p=0.1),
                 transforms.RandomRotation(15),
+                transforms.RandomPerspective(distortion_scale=0.15, p=0.3),
                 transforms.ColorJitter(
                     brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05
                 ),
                 transforms.RandomGrayscale(p=0.05),
+                transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 1.5)),
                 transforms.ToTensor(),
                 transforms.Normalize(_MEAN, _STD),
-                transforms.RandomErasing(p=0.2, scale=(0.02, 0.2)),
+                transforms.RandomErasing(p=0.25, scale=(0.02, 0.25)),
             ]
         )
     return transforms.Compose(
