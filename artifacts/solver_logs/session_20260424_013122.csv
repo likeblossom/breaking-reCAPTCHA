@@ -1,0 +1,38 @@
+timestamp,challenge_type,target,tile_idx,label,confidence,clicked
+2026-04-24 01:31:35,4x4,Bicycle,0,Car,0.0545,False
+2026-04-24 01:31:35,4x4,Bicycle,1,Bicycle,0.8594,False
+2026-04-24 01:31:36,4x4,Bicycle,2,Bicycle,0.7354,False
+2026-04-24 01:31:36,4x4,Bicycle,3,Bicycle,0.8103,False
+2026-04-24 01:31:36,4x4,Bicycle,4,Bridge,0.0214,False
+2026-04-24 01:31:36,4x4,Bicycle,5,Bicycle,0.8353,False
+2026-04-24 01:31:36,4x4,Bicycle,6,Bicycle,0.8059,False
+2026-04-24 01:31:36,4x4,Bicycle,7,Bicycle,0.8331,False
+2026-04-24 01:31:36,4x4,Bicycle,8,Other,0.0313,False
+2026-04-24 01:31:37,4x4,Bicycle,9,Bridge,0.0623,False
+2026-04-24 01:31:37,4x4,Bicycle,10,Other,0.0250,False
+2026-04-24 01:31:37,4x4,Bicycle,11,Bridge,0.0176,False
+2026-04-24 01:31:37,4x4,Bicycle,12,Other,0.0128,False
+2026-04-24 01:31:37,4x4,Bicycle,13,Other,0.0141,False
+2026-04-24 01:31:37,4x4,Bicycle,14,Other,0.0163,False
+2026-04-24 01:31:38,4x4,Bicycle,15,Other,0.0131,False
+2026-04-24 01:31:38,4x4,Bicycle,1,Bicycle,0.8594,True
+2026-04-24 01:31:38,4x4,Bicycle,5,Bicycle,0.8353,True
+2026-04-24 01:31:39,4x4,Bicycle,7,Bicycle,0.8331,True
+2026-04-24 01:31:44,3x3,Car,0,Car,0.8776,True
+2026-04-24 01:31:45,3x3,Car,1,Traffic Light,0.2653,False
+2026-04-24 01:31:45,3x3,Car,2,Car,0.8229,True
+2026-04-24 01:31:46,3x3,Car,3,Bus,0.1034,False
+2026-04-24 01:31:46,3x3,Car,4,Bridge,0.0107,False
+2026-04-24 01:31:46,3x3,Car,5,Bridge,0.0341,False
+2026-04-24 01:31:46,3x3,Car,6,Car,0.8722,True
+2026-04-24 01:31:47,3x3,Car,7,Crosswalk,0.1301,False
+2026-04-24 01:31:47,3x3,Car,8,Car,0.6400,True
+2026-04-24 01:31:52,3x3,Car,0,Car,0.7800,True
+2026-04-24 01:31:53,3x3,Car,1,Car,0.8629,True
+2026-04-24 01:31:54,3x3,Car,2,Traffic Light,0.2223,False
+2026-04-24 01:31:54,3x3,Car,3,Motorcycle,0.0088,False
+2026-04-24 01:31:54,3x3,Car,4,Stairs,0.0155,False
+2026-04-24 01:31:54,3x3,Car,5,Car,0.7572,True
+2026-04-24 01:31:55,3x3,Car,6,Bridge,0.0153,False
+2026-04-24 01:31:56,3x3,Car,7,Car,0.8218,True
+2026-04-24 01:31:56,3x3,Car,8,Motorcycle,0.0175,False

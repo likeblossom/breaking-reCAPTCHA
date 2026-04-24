@@ -1,0 +1,10 @@
+timestamp,challenge_type,target,tile_idx,label,confidence,clicked
+2026-04-24 01:32:28,3x3,Car,0,Car,0.8643,True
+2026-04-24 01:32:29,3x3,Car,1,Motorcycle,0.0236,False
+2026-04-24 01:32:29,3x3,Car,2,Bus,0.0239,False
+2026-04-24 01:32:29,3x3,Car,3,Bridge,0.0121,False
+2026-04-24 01:32:30,3x3,Car,4,Stairs,0.0257,False
+2026-04-24 01:32:30,3x3,Car,5,Bicycle,0.0367,False
+2026-04-24 01:32:30,3x3,Car,6,Car,0.8958,True
+2026-04-24 01:32:31,3x3,Car,7,Crosswalk,0.0071,False
+2026-04-24 01:32:31,3x3,Car,8,Car,0.8329,True

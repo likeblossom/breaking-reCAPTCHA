@@ -1,0 +1,19 @@
+timestamp,challenge_type,target,tile_idx,label,confidence,clicked
+2026-04-24 01:30:54,3x3,Bridge,0,Palm,0.0133,False
+2026-04-24 01:30:54,3x3,Bridge,1,Car,0.0097,False
+2026-04-24 01:30:55,3x3,Bridge,2,Car,0.0125,False
+2026-04-24 01:30:55,3x3,Bridge,3,Car,0.0136,False
+2026-04-24 01:30:55,3x3,Bridge,4,Bridge,0.4966,False
+2026-04-24 01:30:55,3x3,Bridge,5,Chimney,0.0096,False
+2026-04-24 01:30:56,3x3,Bridge,6,Motorcycle,0.0110,False
+2026-04-24 01:30:56,3x3,Bridge,7,Bridge,0.8848,True
+2026-04-24 01:30:57,3x3,Bridge,8,Bridge,0.4982,False
+2026-04-24 01:31:03,3x3,Bicycle,0,Crosswalk,0.0129,False
+2026-04-24 01:31:03,3x3,Bicycle,1,Traffic Light,0.0122,False
+2026-04-24 01:31:03,3x3,Bicycle,2,Bicycle,0.7016,True
+2026-04-24 01:31:04,3x3,Bicycle,3,Car,0.1196,False
+2026-04-24 01:31:04,3x3,Bicycle,4,Bicycle,0.8714,True
+2026-04-24 01:31:05,3x3,Bicycle,5,Bus,0.0085,False
+2026-04-24 01:31:05,3x3,Bicycle,6,Bus,0.0101,False
+2026-04-24 01:31:06,3x3,Bicycle,7,Car,0.0094,False
+2026-04-24 01:31:06,3x3,Bicycle,8,Bicycle,0.8812,True

@@ -5,3 +5,4 @@ scikit-learn>=1.0.0
 matplotlib>=3.5.0
 seaborn>=0.12.0
 tqdm>=4.64.0
+playwright>=1.40.0
