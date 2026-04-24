@@ -5,16 +5,23 @@
 #              - predictions >= threshold → accepted (returned to caller)
 #              - predictions <  threshold → uncertain (sent to fallback)
 #
-# Tuning guidance (from threshold sweep on exp_ce_weighted_sqrt):
-#   0.60 → 88% coverage  / 95.5% accepted accuracy
-#   0.65 → 84% coverage  / 96.2% accepted accuracy
-#   0.70 → 80% coverage  / 96.7% accepted accuracy
-#   0.75 → 75% coverage  / 97.1% accepted accuracy  ← recommended default
-#   0.80 → 63% coverage  / 97.6% accepted accuracy
-#   0.85 → 36% coverage  / 96.4% accepted accuracy  (over-rejects)
-#   0.90 → 15% coverage  / 93.6% accepted accuracy  (over-rejects)
+# Tuning guidance (from threshold sweep on recaptcha_tiles_run1, 14 classes, TTA on):
+#   0.50 → 98.2% coverage  / 93.5% accepted accuracy
+#   0.55 → 97.1% coverage  / 94.0% accepted accuracy
+#   0.60 → 96.0% coverage  / 94.7% accepted accuracy
+#   0.65 → 94.7% coverage  / 95.3% accepted accuracy
+#   0.70 → 93.4% coverage  / 95.7% accepted accuracy
+#   0.75 → 91.0% coverage  / 96.6% accepted accuracy
+#   0.80 → 85.7% coverage  / 97.4% accepted accuracy  ← recommended default
+#   0.85 → 64.5% coverage  / 97.7% accepted accuracy  (over-rejects)
+#   0.90 →  2.9% coverage  / 92.9% accepted accuracy  (over-rejects)
+#
+# Notable weaknesses (see confusion_matrix.png):
+#   - Other:  recall 5% — Other images are spread across many classes, mostly Car (39%).
+#             Raise threshold or treat "Other" predictions with caution.
+#   - Car:    precision 60% — driven by Other images mislabelled as Car.
 
-checkpoint: models/exp_ce_weighted_sqrt/best_model.pt
-threshold: 0.75
+checkpoint: models/recaptcha_tiles_run1/best_model.pt
+threshold: 0.80
 tta: true
 uncertain_label: uncertain
