@@ -18,9 +18,15 @@ dependencies = [
   "playwright>=1.40.0",
 ]
 
+[project.scripts]
+captcha-train = "captcha_vision.training.train:main"
+captcha-evaluate = "captcha_vision.training.evaluate:main"
+captcha-predict = "captcha_vision.cli_scripts.predict:main"
+captcha-solve = "captcha_vision.cli_scripts.solve:main"
+captcha-compare = "captcha_vision.cli_scripts.compare_experiments:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
