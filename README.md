@@ -23,6 +23,13 @@ python -m pip install .
 For development, use `python -m pip install -e .` to make source changes
 available without reinstalling.
 
+Install the test dependencies and run the unit suite with:
+
+```bash
+python -m pip install -e '.[dev]'
+pytest
+```
+
 Playwright also needs a browser for the optional browser workflow:
 
 ```bash
